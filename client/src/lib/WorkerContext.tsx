@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useRef, ReactNode, useCallback } from 'react'
+import { createContext, useContext, useEffect, useRef, useCallback, type ReactNode } from 'react'
 import { useStore } from '../store/useStore'
 import { exportPDF } from './pdfExport'
 import type { WorkerResponse } from '../workers/jscad.worker'
@@ -14,7 +14,7 @@ const WorkerContext = createContext<WorkerContextValue | null>(null)
 
 export function WorkerProvider({ children }: { children: ReactNode }) {
   const workerRef = useRef<Worker | null>(null)
-  const { setGeometry, setRenderError, setIsCompiling, setPieces } = useStore()
+  const { setGeometry, setRenderError, setIsCompiling, setPieces, setPieceGeometries } = useStore()
 
   useEffect(() => {
     const worker = new Worker(
@@ -31,6 +31,11 @@ export function WorkerProvider({ children }: { children: ReactNode }) {
           normals: new Float32Array(res.normals),
         })
         setPieces(res.pieces)
+        setPieceGeometries(res.pieceMeshes.map((pm) => ({
+          vertices: new Float32Array(pm.v),
+          indices: new Uint32Array(pm.i),
+          normals: new Float32Array(pm.n),
+        })))
         setIsCompiling(false)
       } else if (res.type === 'error') {
         setRenderError(res.message)
@@ -45,7 +50,7 @@ export function WorkerProvider({ children }: { children: ReactNode }) {
 
     workerRef.current = worker
     return () => worker.terminate()
-  }, [setGeometry, setRenderError, setIsCompiling, setPieces])
+  }, [setGeometry, setRenderError, setIsCompiling, setPieces, setPieceGeometries])
 
   const compile = useCallback((code: string) => {
     setIsCompiling(true)

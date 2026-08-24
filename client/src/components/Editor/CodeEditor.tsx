@@ -87,7 +87,6 @@ export function CodeEditor() {
 
   function handleRemoveTab(id: string, e: React.MouseEvent) {
     e.stopPropagation()
-    const tab = tabs.find((t) => t.id === id)
     // If removing active tab, we'll switch — compile the new active tab
     const wasActive = activeTabId === id
     removeTab(id)
