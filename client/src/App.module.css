@@ -48,3 +48,11 @@
 }
 
 .dividerH:hover { background: #89b4fa; }
+
+.authScreen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background: #1e1e2e;
+}

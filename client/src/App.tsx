@@ -1,11 +1,20 @@
-import { useRef, useState, useCallback } from 'react'
+import { useRef, useState, useCallback, useEffect } from 'react'
+import { SignIn, useUser } from '@clerk/react'
 import { CodeEditor } from './components/Editor/CodeEditor'
 import { Viewport3D } from './components/Viewport/Viewport3D'
 import { Toolbar } from './components/Toolbar/Toolbar'
 import { BlueprintPanel } from './components/BlueprintPanel/BlueprintPanel'
+import { useStore } from './store/useStore'
 import styles from './App.module.css'
 
 export default function App() {
+  const { isSignedIn } = useUser()
+  const loadProjectsMeta = useStore((s) => s.loadProjectsMeta)
+
+  useEffect(() => {
+    if (isSignedIn) loadProjectsMeta()
+  }, [isSignedIn, loadProjectsMeta])
+
   const [splitPct,  setSplitPct]  = useState(45)
   const [bottomPct, setBottomPct] = useState(20)
 
@@ -49,30 +58,38 @@ export default function App() {
   }, [])
 
   return (
-    <div
-      className={styles.root}
-      ref={containerRef}
-      onMouseMove={onMouseMove}
-      onMouseUp={onMouseUp}
-      onMouseLeave={onMouseUp}
-    >
-      <Toolbar />
-
-      <div className={styles.workspace} style={{ height: `${100 - bottomPct}%` }}>
-        <div className={styles.editorPane} style={{ width: `${splitPct}%` }}>
-          <CodeEditor />
+    <>
+      {!isSignedIn ? (
+        <div className={styles.authScreen}>
+          <SignIn routing="hash" />
         </div>
+      ) : (
+        <div
+          className={styles.root}
+          ref={containerRef}
+          onMouseMove={onMouseMove}
+          onMouseUp={onMouseUp}
+          onMouseLeave={onMouseUp}
+        >
+          <Toolbar />
 
-        <div className={styles.divider} onMouseDown={onHMouseDown} />
+          <div className={styles.workspace} style={{ height: `${100 - bottomPct}%` }}>
+            <div className={styles.editorPane} style={{ width: `${splitPct}%` }}>
+              <CodeEditor />
+            </div>
 
-        <div className={styles.viewportPane} style={{ width: `${100 - splitPct}%` }}>
-          <Viewport3D />
+            <div className={styles.divider} onMouseDown={onHMouseDown} />
+
+            <div className={styles.viewportPane} style={{ width: `${100 - splitPct}%` }}>
+              <Viewport3D />
+            </div>
+          </div>
+
+          <div className={styles.dividerH} onMouseDown={onVMouseDown} />
+
+          <BlueprintPanel height={`${bottomPct}%`} />
         </div>
-      </div>
-
-      <div className={styles.dividerH} onMouseDown={onVMouseDown} />
-
-      <BlueprintPanel height={`${bottomPct}%`} />
-    </div>
+      )}
+    </>
   )
 }

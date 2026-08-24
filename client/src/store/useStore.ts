@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { getSupabase } from '../lib/supabase'
 
 export interface Version {
   id: string
@@ -113,9 +114,10 @@ interface Store {
 
   // Projects persistence
   projectsMeta: ProjectMeta[]
-  saveProject: () => void
-  loadProject: (id: string) => boolean
-  deleteProject: (id: string) => void
+  loadProjectsMeta: () => Promise<void>
+  saveProject: () => Promise<void>
+  loadProject: (id: string) => Promise<boolean>
+  deleteProject: (id: string) => Promise<void>
   newProject: () => void
 }
 
@@ -165,22 +167,9 @@ function getTabsFromProject(p: Project): CodeTab[] {
   return [makeDefaultTab(p.code)]
 }
 
-function loadAllFromStorage(): Record<string, Project> {
-  try {
-    return JSON.parse(localStorage.getItem('forma3d_projects') ?? '{}')
-  } catch {
-    return {}
-  }
-}
-
-function saveAllToStorage(all: Record<string, Project>) {
-  localStorage.setItem('forma3d_projects', JSON.stringify(all))
-}
-
-function toMeta(all: Record<string, Project>): ProjectMeta[] {
-  return Object.values(all)
-    .map((p) => ({ id: p.id, name: p.name, updatedAt: p.updatedAt }))
-    .sort((a, b) => b.updatedAt - a.updatedAt)
+function currentUserId(): string {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (window as any).Clerk?.user?.id ?? ''
 }
 
 const _initProject = makeProject()
@@ -201,7 +190,7 @@ export const useStore = create<Store>((set, get) => ({
   materials: {},
   importedGeometry: null,
   importedName: null,
-  projectsMeta: toMeta(loadAllFromStorage()),
+  projectsMeta: [],
 
   setProjectName: (name) =>
     set((s) => ({ project: { ...s.project, name } })),
@@ -292,7 +281,6 @@ export const useStore = create<Store>((set, get) => ({
     const v = project.versions.find((v) => v.id === id)
     if (!v) return
     if (activeTabId === PROMPT_TAB_ID) {
-      // Switch to first tab and apply version
       const firstTab = tabs[0]
       set({
         code: v.code,
@@ -307,39 +295,61 @@ export const useStore = create<Store>((set, get) => ({
     }
   },
 
-  saveProject: () => {
-    const { project, code, tabs, activeTabId } = get()
-    // Sync active tab before saving
-    const syncedTabs = tabs.map((t) => t.id === activeTabId ? { ...t, code } : t)
-    const updated = { ...project, code, tabs: syncedTabs, updatedAt: Date.now() }
-    const all = loadAllFromStorage()
-    all[updated.id] = updated
-    saveAllToStorage(all)
-    set({ project: updated, tabs: syncedTabs, projectsMeta: toMeta(all) })
+  loadProjectsMeta: async () => {
+    const db = getSupabase()
+    const { data, error } = await db
+      .from('projects')
+      .select('id, name, updated_at')
+      .order('updated_at', { ascending: false })
+    if (error || !data) return
+    const meta: ProjectMeta[] = data.map((r) => ({
+      id: r.id,
+      name: r.name,
+      updatedAt: new Date(r.updated_at).getTime(),
+    }))
+    set({ projectsMeta: meta })
   },
 
-  loadProject: (id) => {
-    const all = loadAllFromStorage()
-    if (!all[id]) return false
-    const p: Project = all[id]
+  saveProject: async () => {
+    const { project, code, tabs, activeTabId } = get()
+    const syncedTabs = tabs.map((t) => t.id === activeTabId ? { ...t, code } : t)
+    const updated: Project = { ...project, code, tabs: syncedTabs, updatedAt: Date.now() }
+    const db = getSupabase()
+    await db.from('projects').upsert({
+      id: updated.id,
+      user_id: currentUserId(),
+      name: updated.name,
+      data: updated,
+      updated_at: new Date(updated.updatedAt).toISOString(),
+    })
+    set({ project: updated, tabs: syncedTabs })
+    await get().loadProjectsMeta()
+  },
+
+  loadProject: async (id) => {
+    const db = getSupabase()
+    const { data, error } = await db
+      .from('projects')
+      .select('data')
+      .eq('id', id)
+      .single()
+    if (error || !data) return false
+    const p: Project = data.data
     const tabs = getTabsFromProject(p)
     const firstTab = tabs[0]
     set({ project: p, code: firstTab.code, tabs, activeTabId: firstTab.id })
     return true
   },
 
-  deleteProject: (id) => {
-    const all = loadAllFromStorage()
-    delete all[id]
-    saveAllToStorage(all)
-    const meta = toMeta(all)
+  deleteProject: async (id) => {
+    const db = getSupabase()
+    await db.from('projects').delete().eq('id', id)
     if (get().project.id === id) {
       const p = makeProject()
       const tabs = getTabsFromProject(p)
-      set({ project: p, code: tabs[0].code, tabs, activeTabId: tabs[0].id, geometry: null, renderError: null, projectsMeta: meta })
-    } else {
-      set({ projectsMeta: meta })
+      set({ project: p, code: tabs[0].code, tabs, activeTabId: tabs[0].id, geometry: null, renderError: null })
     }
+    await get().loadProjectsMeta()
   },
 
   newProject: () => {

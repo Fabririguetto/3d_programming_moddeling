@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import { UserButton } from '@clerk/react'
 import { useStore } from '../../store/useStore'
 import { useJscadWorker } from '../../lib/WorkerContext'
 import { importFile } from '../../lib/fileImport'
@@ -145,6 +146,8 @@ export function Toolbar() {
           <button className={styles.btnPDF} onClick={triggerPDF} title="Exportar plano PDF con medidas por pieza">PDF</button>
           <button className={styles.btnCode} onClick={handleExportCode} title="Descargar código JSCAD (.js)">JS</button>
         </div>
+
+        <UserButton />
       </div>
     </header>
   )

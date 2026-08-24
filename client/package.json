@@ -10,12 +10,14 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@clerk/react": "^6.14.5",
     "@jscad/modeling": "^2.13.0",
     "@jscad/obj-serializer": "^2.1.23",
     "@jscad/stl-serializer": "^2.1.23",
     "@monaco-editor/react": "^4.7.0",
     "@react-three/drei": "^10.7.8",
     "@react-three/fiber": "^9.7.0",
+    "@supabase/supabase-js": "^2.109.0",
     "@types/three": "^0.185.4",
     "comlink": "^4.4.2",
     "html2canvas": "^1.4.1",
