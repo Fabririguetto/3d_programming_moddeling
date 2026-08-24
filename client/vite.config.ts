@@ -6,7 +6,4 @@ export default defineConfig({
   worker: {
     format: 'es',
   },
-  optimizeDeps: {
-    exclude: ['@jscad/modeling', '@jscad/stl-serializer', '@jscad/obj-serializer'],
-  },
 })

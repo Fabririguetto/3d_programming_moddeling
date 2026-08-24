@@ -1,9 +1,12 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useStore } from '../../store/useStore'
-import { useJscadWorker } from '../../lib/useJscadWorker'
+import { useJscadWorker } from '../../lib/WorkerContext'
+import { importFile } from '../../lib/fileImport'
 import { HistoryPanel } from './HistoryPanel'
 import { ProjectsPanel } from './ProjectsPanel'
 import styles from './Toolbar.module.css'
+
+type Panel = 'history' | 'projects' | null
 
 function downloadBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob)
@@ -15,12 +18,16 @@ function downloadBlob(blob: Blob, filename: string) {
 }
 
 export function Toolbar() {
-  const { project, setProjectName, saveProject, saveVersion, newProject } = useStore()
-  const { exportSTL, exportOBJ } = useJscadWorker()
-  const [showHistory, setShowHistory] = useState(false)
-  const [showProjects, setShowProjects] = useState(false)
+  const { project, code, setProjectName, saveProject, saveVersion, newProject, setImportedGeometry, setRenderError, clearImport } = useStore()
+  const { compile, exportSTL, exportOBJ } = useJscadWorker()
+  const [activePanel, setActivePanel] = useState<Panel>(null)
   const [editingName, setEditingName] = useState(false)
   const [nameInput, setNameInput] = useState(project.name)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  function togglePanel(panel: Panel) {
+    setActivePanel((prev) => (prev === panel ? null : panel))
+  }
 
   async function handleExportSTL() {
     try {
@@ -37,6 +44,18 @@ export function Toolbar() {
       downloadBlob(new Blob([text], { type: 'text/plain' }), `${project.name}.obj`)
     } catch (e) {
       alert('Error al exportar OBJ: ' + e)
+    }
+  }
+
+  async function handleImport(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    e.target.value = ''
+    try {
+      const geo = await importFile(file)
+      setImportedGeometry(geo, file.name)
+    } catch (err) {
+      setRenderError(String(err))
     }
   }
 
@@ -60,7 +79,10 @@ export function Toolbar() {
             autoFocus
           />
         ) : (
-          <button className={styles.projectName} onClick={() => { setNameInput(project.name); setEditingName(true) }}>
+          <button
+            className={styles.projectName}
+            onClick={() => { setNameInput(project.name); setEditingName(true) }}
+          >
             {project.name}
           </button>
         )}
@@ -71,34 +93,50 @@ export function Toolbar() {
           Guardar
         </button>
 
+        <button className={styles.btnRun} onClick={() => { clearImport(); compile(code) }} title="Compilar código JSCAD (Ctrl+Enter)">
+          ▶ Compilar
+        </button>
+
         <div className={styles.dropdown}>
-          <button className={styles.btn} onClick={() => setShowHistory(!showHistory)}>
+          <button
+            className={styles.btn + (activePanel === 'history' ? ' ' + styles.active : '')}
+            onClick={() => togglePanel('history')}
+          >
             Historial ▾
           </button>
-          {showHistory && (
-            <HistoryPanel onClose={() => setShowHistory(false)} />
+          {activePanel === 'history' && (
+            <HistoryPanel onClose={() => setActivePanel(null)} />
           )}
         </div>
 
         <div className={styles.dropdown}>
-          <button className={styles.btn} onClick={() => setShowProjects(!showProjects)}>
+          <button
+            className={styles.btn + (activePanel === 'projects' ? ' ' + styles.active : '')}
+            onClick={() => togglePanel('projects')}
+          >
             Proyectos ▾
           </button>
-          {showProjects && (
+          {activePanel === 'projects' && (
             <ProjectsPanel
-              onClose={() => setShowProjects(false)}
-              onNew={() => { newProject(); setShowProjects(false) }}
+              onClose={() => setActivePanel(null)}
+              onNew={() => { newProject(); setActivePanel(null) }}
             />
           )}
         </div>
 
         <div className={styles.exportGroup}>
-          <button className={styles.btnAccent} onClick={handleExportSTL}>
-            STL
+          <button className={styles.btnSecondary} onClick={() => fileInputRef.current?.click()}>
+            Importar
           </button>
-          <button className={styles.btnAccent} onClick={handleExportOBJ}>
-            OBJ
-          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".stl,.obj"
+            style={{ display: 'none' }}
+            onChange={handleImport}
+          />
+          <button className={styles.btnAccent} onClick={handleExportSTL}>STL</button>
+          <button className={styles.btnAccent} onClick={handleExportOBJ}>OBJ</button>
         </div>
       </div>
     </header>

@@ -1,8 +1,16 @@
-import { useEffect, useRef, useCallback } from 'react'
+import { createContext, useContext, useEffect, useRef, ReactNode, useCallback } from 'react'
 import { useStore } from '../store/useStore'
 import type { WorkerResponse } from '../workers/jscad.worker'
 
-export function useJscadWorker() {
+interface WorkerContextValue {
+  compile: (code: string) => void
+  exportSTL: () => Promise<ArrayBuffer>
+  exportOBJ: () => Promise<string>
+}
+
+const WorkerContext = createContext<WorkerContextValue | null>(null)
+
+export function WorkerProvider({ children }: { children: ReactNode }) {
   const workerRef = useRef<Worker | null>(null)
   const { setGeometry, setRenderError, setIsCompiling } = useStore()
 
@@ -75,5 +83,15 @@ export function useJscadWorker() {
     })
   }, [])
 
-  return { compile, exportSTL, exportOBJ }
+  return (
+    <WorkerContext.Provider value={{ compile, exportSTL, exportOBJ }}>
+      {children}
+    </WorkerContext.Provider>
+  )
+}
+
+export function useJscadWorker() {
+  const ctx = useContext(WorkerContext)
+  if (!ctx) throw new Error('useJscadWorker must be used inside WorkerProvider')
+  return ctx
 }

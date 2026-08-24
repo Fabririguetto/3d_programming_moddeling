@@ -49,6 +49,7 @@
   font-size: 13px;
   color: #bac2de;
   border-bottom: 1px solid #2a2a3e;
+  gap: 8px;
 }
 
 .item:last-child { border-bottom: none; }
@@ -56,6 +57,19 @@
 .item.active {
   background: rgba(137, 180, 250, 0.08);
   color: #89b4fa;
+}
+
+.itemName {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.itemActions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
 }
 
 .loadBtn {
@@ -69,6 +83,19 @@
 }
 
 .loadBtn:hover { background: rgba(137, 180, 250, 0.12); }
+
+.deleteBtn {
+  background: none;
+  border: 1px solid #45475a;
+  border-radius: 4px;
+  color: #f38ba8;
+  cursor: pointer;
+  font-size: 11px;
+  padding: 3px 6px;
+  line-height: 1;
+}
+
+.deleteBtn:hover { background: rgba(243, 139, 168, 0.12); }
 
 .newBtn {
   display: block;

@@ -2,9 +2,11 @@ import { useRef, useEffect } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { useStore } from '../../store/useStore'
+import { DimensionBox } from './DimensionBox'
 
-export function Scene() {
-  const geometry = useStore((s) => s.geometry)
+export function Scene({ showDims }: { showDims: boolean }) {
+  const geometry = useStore((s) => s.importedGeometry ?? s.geometry)
+  const boundingBox = useStore((s) => s.boundingBox)
   const meshRef = useRef<THREE.Mesh>(null)
   const geoRef = useRef<THREE.BufferGeometry | null>(null)
 
@@ -26,7 +28,7 @@ export function Scene() {
     meshRef.current.geometry = bg
   }, [geometry])
 
-  useFrame(() => {}) // keep render loop alive
+  useFrame(() => {})
 
   return (
     <>
@@ -37,8 +39,9 @@ export function Scene() {
         <bufferGeometry />
         <meshStandardMaterial color="#c8a46e" side={THREE.DoubleSide} />
       </mesh>
-      <gridHelper args={[2000, 20, '#444', '#333']} rotation={[0, 0, 0]} />
-      <axesHelper args={[100]} />
+      <gridHelper args={[4000, 40, '#444', '#333']} />
+      <axesHelper args={[200]} />
+      {showDims && boundingBox && <DimensionBox bbox={boundingBox} />}
     </>
   )
 }

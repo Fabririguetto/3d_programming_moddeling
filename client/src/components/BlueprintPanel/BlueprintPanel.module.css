@@ -25,10 +25,18 @@
   font-variant-numeric: tabular-nums;
 }
 
-.ok {
-  color: #a6e3a1;
+.ok { color: #a6e3a1; }
+.error { color: #f38ba8; }
+
+.sep {
+  width: 1px;
+  height: 16px;
+  background: #3a3a5c;
+  margin: 0 4px;
 }
 
-.error {
-  color: #f38ba8;
+.dimLabel {
+  font-size: 11px;
+  font-weight: 700;
+  font-family: monospace;
 }

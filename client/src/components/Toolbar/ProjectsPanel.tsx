@@ -8,8 +8,9 @@ export function ProjectsPanel({
   onClose: () => void
   onNew: () => void
 }) {
-  const projects = useStore((s) => s.listProjects())
+  const projects = useStore((s) => s.projectsMeta)
   const loadProject = useStore((s) => s.loadProject)
+  const deleteProject = useStore((s) => s.deleteProject)
   const currentId = useStore((s) => s.project.id)
 
   return (
@@ -25,13 +26,24 @@ export function ProjectsPanel({
         <ul className={styles.list}>
           {projects.map((p) => (
             <li key={p.id} className={styles.item + (p.id === currentId ? ' ' + styles.active : '')}>
-              <span>{p.name}</span>
-              <button
-                className={styles.loadBtn}
-                onClick={() => { loadProject(p.id); onClose() }}
-              >
-                Abrir
-              </button>
+              <span className={styles.itemName}>{p.name}</span>
+              <div className={styles.itemActions}>
+                <button
+                  className={styles.loadBtn}
+                  onClick={() => { loadProject(p.id); onClose() }}
+                >
+                  Abrir
+                </button>
+                <button
+                  className={styles.deleteBtn}
+                  onClick={() => {
+                    if (confirm(`¿Eliminar "${p.name}"?`)) deleteProject(p.id)
+                  }}
+                  title="Eliminar proyecto"
+                >
+                  ✕
+                </button>
+              </div>
             </li>
           ))}
         </ul>
