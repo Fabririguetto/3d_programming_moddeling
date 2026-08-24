@@ -1,0 +1,41 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  background: #1e1e2e;
+  color: #cdd6f4;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+.workspace {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.editorPane {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.viewportPane {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.divider {
+  width: 5px;
+  background: #2a2a3e;
+  cursor: col-resize;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+
+.divider:hover {
+  background: #89b4fa;
+}

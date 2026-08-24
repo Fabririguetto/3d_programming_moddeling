@@ -1,0 +1,34 @@
+.panel {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 0 16px;
+  height: 32px;
+  background: #11111b;
+  border-top: 1px solid #2a2a3e;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.label {
+  color: #6c7086;
+}
+
+.value {
+  color: #a6adc8;
+  font-variant-numeric: tabular-nums;
+}
+
+.ok {
+  color: #a6e3a1;
+}
+
+.error {
+  color: #f38ba8;
+}
