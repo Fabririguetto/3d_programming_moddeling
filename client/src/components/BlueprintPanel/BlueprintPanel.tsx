@@ -17,7 +17,7 @@ function groupByDims(pieces: PieceMeta[]) {
   return map
 }
 
-export function BlueprintPanel() {
+export function BlueprintPanel({ height }: { height: number }) {
   const renderError = useStore((s) => s.renderError)
   const isCompiling = useStore((s) => s.isCompiling)
   const geometry    = useStore((s) => s.geometry)
@@ -46,7 +46,7 @@ export function BlueprintPanel() {
   }
 
   return (
-    <div className={styles.panel}>
+    <div className={styles.panel} style={{ height }}>
       {/* ── Status bar ── */}
       <div className={styles.statusBar}>
         <div className={styles.statusRow}>

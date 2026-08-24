@@ -12,6 +12,7 @@
   display: flex;
   flex: 1;
   overflow: hidden;
+  min-height: 0;
 }
 
 .editorPane {
@@ -36,6 +37,14 @@
   transition: background 0.15s;
 }
 
-.divider:hover {
-  background: #89b4fa;
+.divider:hover { background: #89b4fa; }
+
+.dividerH {
+  height: 5px;
+  background: #2a2a3e;
+  cursor: row-resize;
+  flex-shrink: 0;
+  transition: background 0.15s;
 }
+
+.dividerH:hover { background: #89b4fa; }
