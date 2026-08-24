@@ -47,6 +47,11 @@ export function Toolbar() {
     }
   }
 
+  function handleExportCode() {
+    const blob = new Blob([code], { type: 'text/javascript' })
+    downloadBlob(blob, `${project.name}.js`)
+  }
+
   async function handleImport(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
@@ -138,6 +143,7 @@ export function Toolbar() {
           <button className={styles.btnAccent} onClick={handleExportSTL}>STL</button>
           <button className={styles.btnAccent} onClick={handleExportOBJ}>OBJ</button>
           <button className={styles.btnPDF} onClick={triggerPDF} title="Exportar plano PDF con medidas por pieza">PDF</button>
+          <button className={styles.btnCode} onClick={handleExportCode} title="Descargar código JSCAD (.js)">JS</button>
         </div>
       </div>
     </header>
