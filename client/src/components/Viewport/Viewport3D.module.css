@@ -68,3 +68,41 @@
   border-color: rgba(137, 180, 250, 0.5);
   color: #89b4fa;
 }
+
+/* ── Piece hover tooltip ── */
+.tooltip {
+  position: fixed;
+  background: rgba(14, 14, 28, 0.92);
+  border: 1px solid #313255;
+  border-radius: 8px;
+  padding: 8px 12px;
+  pointer-events: none;
+  z-index: 1000;
+  backdrop-filter: blur(6px);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  min-width: 140px;
+}
+
+.tooltipName {
+  font-size: 13px;
+  font-weight: 700;
+  color: #cdd6f4;
+  margin-bottom: 5px;
+  white-space: nowrap;
+}
+
+.tooltipDims {
+  font-size: 11.5px;
+  color: #7f849c;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+
+.dimW { color: #f38ba8; font-weight: 600; }
+.dimH { color: #a6e3a1; font-weight: 600; }
+.dimD { color: #89b4fa; font-weight: 600; }
+
+.tooltipSep { color: #45475a; margin: 0 1px; }

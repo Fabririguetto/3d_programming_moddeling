@@ -14,8 +14,14 @@ export interface WorkerPiece {
   h: number  // JSCAD Z range → Alto
 }
 
+export interface PieceMeshBuffers {
+  v: ArrayBuffer  // vertices (Float32)
+  i: ArrayBuffer  // indices (Uint32)
+  n: ArrayBuffer  // normals (Float32)
+}
+
 export type WorkerResponse =
-  | { type: 'geometry'; vertices: ArrayBuffer; indices: ArrayBuffer; normals: ArrayBuffer; pieces: WorkerPiece[] }
+  | { type: 'geometry'; vertices: ArrayBuffer; indices: ArrayBuffer; normals: ArrayBuffer; pieces: WorkerPiece[]; pieceMeshes: PieceMeshBuffers[] }
   | { type: 'error'; message: string }
   | { type: 'stl-data'; data: ArrayBuffer }
   | { type: 'obj-data'; data: string }
@@ -55,6 +61,12 @@ self.onmessage = (e: MessageEvent<WorkerRequest>) => {
       const allGeoms = named.map((p) => p.geom)
       const mesh = toBuffers(allGeoms)
 
+      // Per-piece geometry for hover interaction
+      const pieceMeshes: PieceMeshBuffers[] = named.map(({ geom }) => {
+        const pm = toBuffers([geom])
+        return { v: pm.vertices, i: pm.indices, n: pm.normals }
+      })
+
       // Per-piece bounding boxes in JSCAD space (Z-up: x=width, y=depth, z=height)
       const pieces: WorkerPiece[] = named.map(({ name, geom }) => {
         const polys = jscadModeling.geometries.geom3.toPolygons(geom)
@@ -75,9 +87,12 @@ self.onmessage = (e: MessageEvent<WorkerRequest>) => {
         }
       })
 
+      const transferables: ArrayBuffer[] = [mesh.vertices, mesh.indices, mesh.normals]
+      for (const pm of pieceMeshes) transferables.push(pm.v, pm.i, pm.n)
+
       self.postMessage(
-        { type: 'geometry', ...mesh, pieces },
-        [mesh.vertices, mesh.indices, mesh.normals]
+        { type: 'geometry', ...mesh, pieces, pieceMeshes },
+        transferables
       )
     } catch (err: unknown) {
       self.postMessage({ type: 'error', message: String(err) })

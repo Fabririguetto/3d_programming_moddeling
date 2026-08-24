@@ -90,10 +90,12 @@ interface Store {
   renderError: string | null
   isCompiling: boolean
   pieces: PieceMeta[]
+  pieceGeometries: GeometryData[]
   setGeometry: (g: GeometryData | null) => void
   setRenderError: (e: string | null) => void
   setIsCompiling: (v: boolean) => void
   setPieces: (p: PieceMeta[]) => void
+  setPieceGeometries: (geos: GeometryData[]) => void
 
   // Import mode — imported file displayed instead of JSCAD output
   importedGeometry: GeometryData | null
@@ -191,6 +193,7 @@ export const useStore = create<Store>((set, get) => ({
   renderError: null,
   isCompiling: false,
   pieces: [],
+  pieceGeometries: [],
   importedGeometry: null,
   importedName: null,
   projectsMeta: toMeta(loadAllFromStorage()),
@@ -244,6 +247,7 @@ export const useStore = create<Store>((set, get) => ({
   setRenderError: (renderError) => set({ renderError, isCompiling: false }),
   setIsCompiling: (isCompiling) => set({ isCompiling }),
   setPieces: (pieces) => set({ pieces }),
+  setPieceGeometries: (pieceGeometries) => set({ pieceGeometries }),
 
   setImportedGeometry: (importedGeometry, importedName) =>
     set({
