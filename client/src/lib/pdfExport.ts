@@ -3,6 +3,7 @@ import type { PieceMeta } from '../store/useStore'
 
 interface GroupedPiece extends PieceMeta {
   qty: number
+  material: string
 }
 
 const A4_W = 210
@@ -184,17 +185,18 @@ function commonPrefix(names: string[]): string {
   return trimmed || names[0]
 }
 
-function groupPieces(pieces: PieceMeta[]): GroupedPiece[] {
-  // Key by dimensions only — pieces with the same size are the same cut
+function groupPieces(pieces: PieceMeta[], materials: Record<string, string>): GroupedPiece[] {
+  // Key by dimensions + material — same size AND same material = same cut
   const map = new Map<string, { names: string[]; piece: GroupedPiece }>()
   for (const p of pieces) {
-    const key = `${p.w}|${p.d}|${p.h}`
+    const mat = materials[p.name] ?? ''
+    const key = `${p.w}|${p.d}|${p.h}|${mat}`
     const ex = map.get(key)
     if (ex) {
       ex.names.push(p.name)
       ex.piece.qty++
     } else {
-      map.set(key, { names: [p.name], piece: { ...p, qty: 1 } })
+      map.set(key, { names: [p.name], piece: { ...p, qty: 1, material: mat } })
     }
   }
   return Array.from(map.values()).map(({ names, piece }) => ({
@@ -203,14 +205,14 @@ function groupPieces(pieces: PieceMeta[]): GroupedPiece[] {
   }))
 }
 
-export function exportPDF(projectName: string, pieces: PieceMeta[]) {
+export function exportPDF(projectName: string, pieces: PieceMeta[], materials: Record<string, string> = {}) {
   if (!pieces.length) {
     alert('No hay piezas para exportar. El código debe retornar un array con { name, geo }.')
     return
   }
 
   const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' })
-  const grouped = groupPieces(pieces)
+  const grouped = groupPieces(pieces, materials)
   const totalUnits = pieces.length
 
   // ── Página 1: Header + Lista de piezas ───────────────────────────────────
@@ -240,10 +242,11 @@ export function exportPDF(projectName: string, pieces: PieceMeta[]) {
 
   // Table header
   const COL_NAME = MARGIN + 2
-  const COL_W = MARGIN + 65
-  const COL_H = MARGIN + 100
-  const COL_D = MARGIN + 133
-  const COL_QTY = MARGIN + 163
+  const COL_W = MARGIN + 58
+  const COL_H = MARGIN + 90
+  const COL_D = MARGIN + 122
+  const COL_QTY = MARGIN + 152
+  const COL_MAT = MARGIN + 163
   const TABLE_RIGHT = A4_W - MARGIN
 
   doc.setFillColor(35, 40, 75)
@@ -252,32 +255,61 @@ export function exportPDF(projectName: string, pieces: PieceMeta[]) {
   doc.setFontSize(8)
   doc.setTextColor(180, 195, 255)
   doc.text('Nombre', COL_NAME, y + 5.5)
-  doc.text('Ancho X (mm)', COL_W, y + 5.5)
-  doc.text('Alto Z (mm)', COL_H, y + 5.5)
-  doc.text('Prof. Y (mm)', COL_D, y + 5.5)
+  doc.text('X mm', COL_W, y + 5.5)
+  doc.text('Z mm', COL_H, y + 5.5)
+  doc.text('Y mm', COL_D, y + 5.5)
   doc.text('Cant.', COL_QTY, y + 5.5)
+  doc.text('Material', COL_MAT, y + 5.5)
   y += 8
+
+  // Group by material for display
+  const byMaterial = new Map<string, GroupedPiece[]>()
+  for (const p of grouped) {
+    const mat = p.material || '—'
+    if (!byMaterial.has(mat)) byMaterial.set(mat, [])
+    byMaterial.get(mat)!.push(p)
+  }
 
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(8.5)
+  let rowIdx = 0
 
-  for (let i = 0; i < grouped.length; i++) {
-    const p = grouped[i]
-    if (i % 2 === 0) {
-      doc.setFillColor(246, 247, 252)
-      doc.rect(MARGIN, y, TABLE_RIGHT - MARGIN, 7, 'F')
+  for (const [mat, matPieces] of byMaterial) {
+    // Material header row (only if any piece has a material)
+    if (byMaterial.size > 1 || mat !== '—') {
+      doc.setFillColor(45, 48, 90)
+      doc.rect(MARGIN, y, TABLE_RIGHT - MARGIN, 6, 'F')
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(7.5)
+      doc.setTextColor(203, 166, 247)
+      doc.text(mat, COL_NAME, y + 4.2)
+      doc.setFont('helvetica', 'normal')
+      y += 6
     }
-    doc.setTextColor(25, 25, 35)
-    doc.text(p.name, COL_NAME, y + 4.8)
-    doc.setTextColor(160, 35, 35)
-    doc.text(String(p.w), COL_W, y + 4.8)
-    doc.setTextColor(35, 120, 35)
-    doc.text(String(p.h), COL_H, y + 4.8)
-    doc.setTextColor(35, 70, 185)
-    doc.text(String(p.d), COL_D, y + 4.8)
-    doc.setTextColor(60, 60, 70)
-    doc.text(String(p.qty), COL_QTY, y + 4.8)
-    y += 7
+
+    for (const p of matPieces) {
+      if (rowIdx % 2 === 0) {
+        doc.setFillColor(246, 247, 252)
+        doc.rect(MARGIN, y, TABLE_RIGHT - MARGIN, 7, 'F')
+      }
+      doc.setFontSize(8.5)
+      doc.setTextColor(25, 25, 35)
+      doc.text(p.name, COL_NAME, y + 4.8)
+      doc.setTextColor(160, 35, 35)
+      doc.text(String(p.w), COL_W, y + 4.8)
+      doc.setTextColor(35, 120, 35)
+      doc.text(String(p.h), COL_H, y + 4.8)
+      doc.setTextColor(35, 70, 185)
+      doc.text(String(p.d), COL_D, y + 4.8)
+      doc.setTextColor(60, 60, 70)
+      doc.text(String(p.qty), COL_QTY, y + 4.8)
+      if (p.material) {
+        doc.setTextColor(130, 80, 180)
+        doc.text(p.material, COL_MAT, y + 4.8)
+      }
+      y += 7
+      rowIdx++
+    }
   }
 
   // Table border

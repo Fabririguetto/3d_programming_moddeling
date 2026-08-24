@@ -92,8 +92,8 @@ export function WorkerProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const triggerPDF = useCallback(() => {
-    const { project, pieces } = useStore.getState()
-    exportPDF(project.name, pieces)
+    const { project, pieces, materials } = useStore.getState()
+    exportPDF(project.name, pieces, materials)
   }, [])
 
   return (

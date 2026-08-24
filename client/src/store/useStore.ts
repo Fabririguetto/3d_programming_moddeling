@@ -97,6 +97,10 @@ interface Store {
   setPieces: (p: PieceMeta[]) => void
   setPieceGeometries: (geos: GeometryData[]) => void
 
+  // Materials — keyed by piece name
+  materials: Record<string, string>
+  setMaterial: (pieceName: string, material: string) => void
+
   // Import mode — imported file displayed instead of JSCAD output
   importedGeometry: GeometryData | null
   importedName: string | null
@@ -194,6 +198,7 @@ export const useStore = create<Store>((set, get) => ({
   isCompiling: false,
   pieces: [],
   pieceGeometries: [],
+  materials: {},
   importedGeometry: null,
   importedName: null,
   projectsMeta: toMeta(loadAllFromStorage()),
@@ -248,6 +253,8 @@ export const useStore = create<Store>((set, get) => ({
   setIsCompiling: (isCompiling) => set({ isCompiling }),
   setPieces: (pieces) => set({ pieces }),
   setPieceGeometries: (pieceGeometries) => set({ pieceGeometries }),
+  setMaterial: (pieceName, material) =>
+    set((s) => ({ materials: { ...s.materials, [pieceName]: material } })),
 
   setImportedGeometry: (importedGeometry, importedName) =>
     set({
