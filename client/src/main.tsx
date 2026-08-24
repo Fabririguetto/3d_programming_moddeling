@@ -7,7 +7,11 @@ import { WorkerProvider } from './lib/WorkerContext.tsx'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <ClerkProvider proxyUrl={`${window.location.origin}/__clerk`} afterSignOutUrl="/">
+    <ClerkProvider
+        proxyUrl={`${window.location.origin}/__clerk`}
+        clerkJSUrl="https://cdn.jsdelivr.net/npm/@clerk/clerk-js@6/dist/clerk.browser.js"
+        afterSignOutUrl="/"
+      >
       <WorkerProvider>
         <App />
       </WorkerProvider>
