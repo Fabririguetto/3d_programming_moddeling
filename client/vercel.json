@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/__clerk/:path*",
-      "destination": "https://allowing-opossum-330.clerk.accounts.dev/:path*"
+      "destination": "/api/__clerk/:path*"
     }
   ]
 }
