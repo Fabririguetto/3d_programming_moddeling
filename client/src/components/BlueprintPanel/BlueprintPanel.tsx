@@ -17,7 +17,7 @@ function groupByDims(pieces: PieceMeta[]) {
   return map
 }
 
-export function BlueprintPanel({ height }: { height: number }) {
+export function BlueprintPanel({ height }: { height: string }) {
   const renderError = useStore((s) => s.renderError)
   const isCompiling = useStore((s) => s.isCompiling)
   const geometry    = useStore((s) => s.geometry)

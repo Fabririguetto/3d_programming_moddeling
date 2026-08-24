@@ -5,25 +5,20 @@ import { Toolbar } from './components/Toolbar/Toolbar'
 import { BlueprintPanel } from './components/BlueprintPanel/BlueprintPanel'
 import styles from './App.module.css'
 
-const BOTTOM_MIN = 32   // just the status bar
-const BOTTOM_MAX = 480
-
 export default function App() {
-  const [splitPct, setSplitPct]   = useState(45)
-  const [bottomH,  setBottomH]    = useState(180)
+  const [splitPct,  setSplitPct]  = useState(45)
+  const [bottomPct, setBottomPct] = useState(20)
 
-  const draggingH  = useRef(false)
-  const draggingV  = useRef(false)
+  const draggingH = useRef(false)
+  const draggingV = useRef(false)
   const containerRef = useRef<HTMLDivElement>(null)
 
-  // ── Horizontal (editor ↔ viewport) ──────────────────────────
   const onHMouseDown = useCallback(() => {
     draggingH.current = true
     document.body.style.cursor = 'col-resize'
     document.body.style.userSelect = 'none'
   }, [])
 
-  // ── Vertical (workspace ↔ bottom panel) ─────────────────────
   const onVMouseDown = useCallback(() => {
     draggingV.current = true
     document.body.style.cursor = 'row-resize'
@@ -41,8 +36,8 @@ export default function App() {
 
     if (draggingV.current) {
       const rect = containerRef.current.getBoundingClientRect()
-      const newH = rect.bottom - e.clientY
-      setBottomH(Math.min(Math.max(newH, BOTTOM_MIN), BOTTOM_MAX))
+      const pct = ((rect.bottom - e.clientY) / rect.height) * 100
+      setBottomPct(Math.min(Math.max(pct, 20), 80))
     }
   }, [])
 
@@ -63,7 +58,7 @@ export default function App() {
     >
       <Toolbar />
 
-      <div className={styles.workspace}>
+      <div className={styles.workspace} style={{ height: `${100 - bottomPct}%` }}>
         <div className={styles.editorPane} style={{ width: `${splitPct}%` }}>
           <CodeEditor />
         </div>
@@ -77,7 +72,7 @@ export default function App() {
 
       <div className={styles.dividerH} onMouseDown={onVMouseDown} />
 
-      <BlueprintPanel height={bottomH} />
+      <BlueprintPanel height={`${bottomPct}%`} />
     </div>
   )
 }
