@@ -7,7 +7,7 @@
 [🇦🇷 Español](#español) · [🇬🇧 English](#english)
 
 [![Deploy](https://github.com/Fabririguetto/3d_programming_moddeling/actions/workflows/deploy.yml/badge.svg)](https://github.com/Fabririguetto/3d_programming_moddeling/actions/workflows/deploy.yml)
-[![Live Demo](https://img.shields.io/badge/demo-live-brightgreen)](https://fabririguetto.github.io/3d_programming_moddeling/)
+[![Live Demo](https://img.shields.io/badge/demo-live-brightgreen)](https://3d-programming-moddeling.vercel.app/)
 
 </div>
 
@@ -163,7 +163,7 @@ npm run preview # serves the build locally
 
 ### Live demo
 
-[https://fabririguetto.github.io/3d_programming_moddeling/](https://fabririguetto.github.io/3d_programming_moddeling/)
+[https://3d-programming-moddeling.vercel.app/](https://3d-programming-moddeling.vercel.app/)
 
 ---
 
