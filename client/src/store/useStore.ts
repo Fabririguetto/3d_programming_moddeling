@@ -7,10 +7,17 @@ export interface Version {
   timestamp: number
 }
 
+export interface CodeTab {
+  id: string
+  name: string
+  code: string
+}
+
 export interface Project {
   id: string
   name: string
   code: string
+  tabs?: CodeTab[]
   versions: Version[]
   updatedAt: number
 }
@@ -51,12 +58,29 @@ export interface ProjectMeta {
   updatedAt: number
 }
 
+export interface PieceMeta {
+  name: string
+  w: number  // JSCAD X = Ancho
+  d: number  // JSCAD Y = Profundidad
+  h: number  // JSCAD Z = Alto
+}
+
+export const PROMPT_TAB_ID = '__prompt__'
+
 interface Store {
   // Project
   project: Project
   setProjectName: (name: string) => void
 
-  // Editor
+  // Tabs
+  tabs: CodeTab[]
+  activeTabId: string
+  addTab: () => void
+  removeTab: (id: string) => void
+  setActiveTab: (id: string) => void
+  renameTab: (id: string, name: string) => void
+
+  // Editor (mirrors active tab's code)
   code: string
   setCode: (code: string) => void
 
@@ -65,9 +89,11 @@ interface Store {
   boundingBox: BoundingBox | null
   renderError: string | null
   isCompiling: boolean
+  pieces: PieceMeta[]
   setGeometry: (g: GeometryData | null) => void
   setRenderError: (e: string | null) => void
   setIsCompiling: (v: boolean) => void
+  setPieces: (p: PieceMeta[]) => void
 
   // Import mode — imported file displayed instead of JSCAD output
   importedGeometry: GeometryData | null
@@ -88,45 +114,49 @@ interface Store {
 }
 
 const DEFAULT_CODE = `// Forma3D — Editor paramétrico
-// Usa las funciones de @jscad/modeling
-// La función main() devuelve la geometría a renderizar
+// Retorná un array de { name, geo } para el plano PDF con medidas por pieza
 
-const { union, subtract, intersect } = jscad.booleans
-const { cuboid, cylinder, sphere, torus } = jscad.primitives
-const { translate, rotate, scale } = jscad.transforms
+const { cuboid } = jscad.primitives
 const { colorize } = jscad.colors
 
 function main() {
-  // Escritorio simple
-  const tabletop = colorize(
-    [0.6, 0.4, 0.2],
+  const tabletop = colorize([0.6, 0.4, 0.2],
     cuboid({ size: [1200, 600, 30], center: [0, 0, 750] })
   )
 
-  const legShape = (x, y) =>
-    colorize(
-      [0.5, 0.35, 0.15],
-      cuboid({ size: [50, 50, 720], center: [x, y, 360] })
-    )
-
-  return union(
-    tabletop,
-    legShape(-550, -250),
-    legShape( 550, -250),
-    legShape(-550,  250),
-    legShape( 550,  250)
+  const leg = (x, y) => colorize([0.5, 0.35, 0.15],
+    cuboid({ size: [50, 50, 720], center: [x, y, 360] })
   )
+
+  return [
+    { name: 'Tablero',  geo: tabletop },
+    { name: 'Pata 1',   geo: leg(-550, -250) },
+    { name: 'Pata 2',   geo: leg( 550, -250) },
+    { name: 'Pata 3',   geo: leg(-550,  250) },
+    { name: 'Pata 4',   geo: leg( 550,  250) },
+  ]
 }
 `
 
+function makeDefaultTab(code = DEFAULT_CODE): CodeTab {
+  return { id: crypto.randomUUID(), name: 'Tab 1', code }
+}
+
 function makeProject(name = 'Nuevo Proyecto'): Project {
+  const tab = makeDefaultTab()
   return {
     id: crypto.randomUUID(),
     name,
     code: DEFAULT_CODE,
+    tabs: [tab],
     versions: [],
     updatedAt: Date.now(),
   }
+}
+
+function getTabsFromProject(p: Project): CodeTab[] {
+  if (p.tabs && p.tabs.length > 0) return p.tabs
+  return [makeDefaultTab(p.code)]
 }
 
 function loadAllFromStorage(): Record<string, Project> {
@@ -147,13 +177,20 @@ function toMeta(all: Record<string, Project>): ProjectMeta[] {
     .sort((a, b) => b.updatedAt - a.updatedAt)
 }
 
+const _initProject = makeProject()
+const _initTabs = getTabsFromProject(_initProject)
+const _initActiveTabId = _initTabs[0].id
+
 export const useStore = create<Store>((set, get) => ({
-  project: makeProject(),
-  code: DEFAULT_CODE,
+  project: _initProject,
+  tabs: _initTabs,
+  activeTabId: _initActiveTabId,
+  code: _initTabs[0].code,
   geometry: null,
   boundingBox: null,
   renderError: null,
   isCompiling: false,
+  pieces: [],
   importedGeometry: null,
   importedName: null,
   projectsMeta: toMeta(loadAllFromStorage()),
@@ -161,7 +198,43 @@ export const useStore = create<Store>((set, get) => ({
   setProjectName: (name) =>
     set((s) => ({ project: { ...s.project, name } })),
 
-  setCode: (code) => set({ code }),
+  // ── Tabs ────────────────────────────────────────────────────────
+  addTab: () => {
+    const tab = makeDefaultTab('// Nuevo tab\n\nconst { cuboid } = jscad.primitives\n\nfunction main() {\n  return cuboid({ size: [100, 100, 100] })\n}\n')
+    tab.name = `Tab ${get().tabs.length + 1}`
+    set((s) => ({ tabs: [...s.tabs, tab], activeTabId: tab.id, code: tab.code }))
+  },
+
+  removeTab: (id) => {
+    const { tabs, activeTabId } = get()
+    if (tabs.length <= 1) return  // always keep at least one tab
+    const idx = tabs.findIndex((t) => t.id === id)
+    const newTabs = tabs.filter((t) => t.id !== id)
+    let newActiveId = activeTabId
+    if (activeTabId === id) {
+      const next = newTabs[Math.min(idx, newTabs.length - 1)]
+      newActiveId = next.id
+    }
+    const newCode = newTabs.find((t) => t.id === newActiveId)?.code ?? ''
+    set({ tabs: newTabs, activeTabId: newActiveId, code: newCode })
+  },
+
+  setActiveTab: (id) => {
+    if (id === PROMPT_TAB_ID) {
+      set({ activeTabId: id })
+      return
+    }
+    const tab = get().tabs.find((t) => t.id === id)
+    if (tab) set({ activeTabId: id, code: tab.code })
+  },
+
+  renameTab: (id, name) =>
+    set((s) => ({ tabs: s.tabs.map((t) => t.id === id ? { ...t, name } : t) })),
+
+  setCode: (code) => set((s) => ({
+    code,
+    tabs: s.tabs.map((t) => t.id === s.activeTabId ? { ...t, code } : t),
+  })),
 
   setGeometry: (geometry) => set({
     geometry,
@@ -170,6 +243,7 @@ export const useStore = create<Store>((set, get) => ({
   }),
   setRenderError: (renderError) => set({ renderError, isCompiling: false }),
   setIsCompiling: (isCompiling) => set({ isCompiling }),
+  setPieces: (pieces) => set({ pieces }),
 
   setImportedGeometry: (importedGeometry, importedName) =>
     set({
@@ -203,25 +277,43 @@ export const useStore = create<Store>((set, get) => ({
   },
 
   loadVersion: (id) => {
-    const { project } = get()
+    const { project, activeTabId, tabs } = get()
     const v = project.versions.find((v) => v.id === id)
-    if (v) set({ code: v.code })
+    if (!v) return
+    if (activeTabId === PROMPT_TAB_ID) {
+      // Switch to first tab and apply version
+      const firstTab = tabs[0]
+      set({
+        code: v.code,
+        activeTabId: firstTab.id,
+        tabs: tabs.map((t) => t.id === firstTab.id ? { ...t, code: v.code } : t),
+      })
+    } else {
+      set({
+        code: v.code,
+        tabs: tabs.map((t) => t.id === activeTabId ? { ...t, code: v.code } : t),
+      })
+    }
   },
 
   saveProject: () => {
-    const { project, code } = get()
-    const updated = { ...project, code, updatedAt: Date.now() }
+    const { project, code, tabs, activeTabId } = get()
+    // Sync active tab before saving
+    const syncedTabs = tabs.map((t) => t.id === activeTabId ? { ...t, code } : t)
+    const updated = { ...project, code, tabs: syncedTabs, updatedAt: Date.now() }
     const all = loadAllFromStorage()
     all[updated.id] = updated
     saveAllToStorage(all)
-    set({ project: updated, projectsMeta: toMeta(all) })
+    set({ project: updated, tabs: syncedTabs, projectsMeta: toMeta(all) })
   },
 
   loadProject: (id) => {
     const all = loadAllFromStorage()
     if (!all[id]) return false
     const p: Project = all[id]
-    set({ project: p, code: p.code })
+    const tabs = getTabsFromProject(p)
+    const firstTab = tabs[0]
+    set({ project: p, code: firstTab.code, tabs, activeTabId: firstTab.id })
     return true
   },
 
@@ -232,7 +324,8 @@ export const useStore = create<Store>((set, get) => ({
     const meta = toMeta(all)
     if (get().project.id === id) {
       const p = makeProject()
-      set({ project: p, code: p.code, geometry: null, renderError: null, projectsMeta: meta })
+      const tabs = getTabsFromProject(p)
+      set({ project: p, code: tabs[0].code, tabs, activeTabId: tabs[0].id, geometry: null, renderError: null, projectsMeta: meta })
     } else {
       set({ projectsMeta: meta })
     }
@@ -240,6 +333,7 @@ export const useStore = create<Store>((set, get) => ({
 
   newProject: () => {
     const p = makeProject()
-    set({ project: p, code: p.code, geometry: null, renderError: null })
+    const tabs = getTabsFromProject(p)
+    set({ project: p, code: tabs[0].code, tabs, activeTabId: tabs[0].id, geometry: null, renderError: null })
   },
 }))

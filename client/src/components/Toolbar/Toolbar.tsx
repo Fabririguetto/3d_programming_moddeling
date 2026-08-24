@@ -19,7 +19,7 @@ function downloadBlob(blob: Blob, filename: string) {
 
 export function Toolbar() {
   const { project, code, setProjectName, saveProject, saveVersion, newProject, setImportedGeometry, setRenderError, clearImport } = useStore()
-  const { compile, exportSTL, exportOBJ } = useJscadWorker()
+  const { compile, exportSTL, exportOBJ, triggerPDF } = useJscadWorker()
   const [activePanel, setActivePanel] = useState<Panel>(null)
   const [editingName, setEditingName] = useState(false)
   const [nameInput, setNameInput] = useState(project.name)
@@ -137,6 +137,7 @@ export function Toolbar() {
           />
           <button className={styles.btnAccent} onClick={handleExportSTL}>STL</button>
           <button className={styles.btnAccent} onClick={handleExportOBJ}>OBJ</button>
+          <button className={styles.btnPDF} onClick={triggerPDF} title="Exportar plano PDF con medidas por pieza">PDF</button>
         </div>
       </div>
     </header>

@@ -7,15 +7,22 @@ export type WorkerRequest =
   | { type: 'export-stl' }
   | { type: 'export-obj' }
 
+export interface WorkerPiece {
+  name: string
+  w: number  // JSCAD X range → Ancho
+  d: number  // JSCAD Y range → Profundidad
+  h: number  // JSCAD Z range → Alto
+}
+
 export type WorkerResponse =
-  | { type: 'geometry'; vertices: ArrayBuffer; indices: ArrayBuffer; normals: ArrayBuffer }
+  | { type: 'geometry'; vertices: ArrayBuffer; indices: ArrayBuffer; normals: ArrayBuffer; pieces: WorkerPiece[] }
   | { type: 'error'; message: string }
   | { type: 'stl-data'; data: ArrayBuffer }
   | { type: 'obj-data'; data: string }
 
 type Geom3 = jscadModeling.geometries.geom3.Geom3
 
-let lastGeometries: Geom3[] | null = null
+let lastPieces: { name: string; geom: Geom3 }[] | null = null
 
 self.onmessage = (e: MessageEvent<WorkerRequest>) => {
   const req = e.data
@@ -25,11 +32,51 @@ self.onmessage = (e: MessageEvent<WorkerRequest>) => {
       // eslint-disable-next-line no-new-func
       const fn = new Function('jscad', `${req.code}\n return main()`)
       const result = fn(jscad)
-      lastGeometries = (Array.isArray(result) ? result : [result]) as Geom3[]
 
-      const mesh = toBuffers(lastGeometries)
+      // Normalize result to named pieces
+      let named: { name: string; geom: Geom3 }[]
+      if (Array.isArray(result)) {
+        if (result.length > 0 && result[0] != null && typeof result[0] === 'object' && 'geo' in result[0]) {
+          // Named: [{ name, geo }]
+          named = result.map((item, i) => ({
+            name: typeof item.name === 'string' ? item.name : `Pieza ${i + 1}`,
+            geom: item.geo as Geom3,
+          }))
+        } else {
+          // Plain geometry array
+          named = (result as Geom3[]).map((geom, i) => ({ name: `Pieza ${i + 1}`, geom }))
+        }
+      } else {
+        named = [{ name: 'Modelo', geom: result as Geom3 }]
+      }
+
+      lastPieces = named
+
+      const allGeoms = named.map((p) => p.geom)
+      const mesh = toBuffers(allGeoms)
+
+      // Per-piece bounding boxes in JSCAD space (Z-up: x=width, y=depth, z=height)
+      const pieces: WorkerPiece[] = named.map(({ name, geom }) => {
+        const polys = jscadModeling.geometries.geom3.toPolygons(geom)
+        let minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity,minZ=Infinity,maxZ=-Infinity
+        for (const poly of polys) {
+          for (const v of poly.vertices) {
+            const [vx, vy, vz] = v as [number, number, number]
+            if (vx < minX) minX = vx; if (vx > maxX) maxX = vx
+            if (vy < minY) minY = vy; if (vy > maxY) maxY = vy
+            if (vz < minZ) minZ = vz; if (vz > maxZ) maxZ = vz
+          }
+        }
+        return {
+          name,
+          w: Math.round(maxX - minX),
+          d: Math.round(maxY - minY),
+          h: Math.round(maxZ - minZ),
+        }
+      })
+
       self.postMessage(
-        { type: 'geometry', ...mesh },
+        { type: 'geometry', ...mesh, pieces },
         [mesh.vertices, mesh.indices, mesh.normals]
       )
     } catch (err: unknown) {
@@ -39,12 +86,12 @@ self.onmessage = (e: MessageEvent<WorkerRequest>) => {
   }
 
   if (req.type === 'export-stl') {
-    if (!lastGeometries) {
+    if (!lastPieces) {
       self.postMessage({ type: 'error', message: 'No hay geometría compilada' })
       return
     }
     try {
-      const buf = buildSTL(lastGeometries)
+      const buf = buildSTL(lastPieces.map((p) => p.geom))
       self.postMessage({ type: 'stl-data', data: buf }, [buf])
     } catch (err) {
       self.postMessage({ type: 'error', message: String(err) })
@@ -53,12 +100,12 @@ self.onmessage = (e: MessageEvent<WorkerRequest>) => {
   }
 
   if (req.type === 'export-obj') {
-    if (!lastGeometries) {
+    if (!lastPieces) {
       self.postMessage({ type: 'error', message: 'No hay geometría compilada' })
       return
     }
     try {
-      const text = buildOBJ(lastGeometries)
+      const text = buildOBJ(lastPieces.map((p) => p.geom))
       self.postMessage({ type: 'obj-data', data: text })
     } catch (err) {
       self.postMessage({ type: 'error', message: String(err) })
@@ -99,7 +146,6 @@ function getTriangles(geoms: Geom3[]) {
 
 function buildSTL(geoms: Geom3[]): ArrayBuffer {
   const tris = getTriangles(geoms)
-  // Binary STL: 80-byte header + 4-byte count + 50 bytes per triangle
   const buf = new ArrayBuffer(84 + tris.length * 50)
   const view = new DataView(buf)
   view.setUint32(80, tris.length, true)
@@ -143,7 +189,6 @@ function toBuffers(geoms: Geom3[]) {
     for (const pt of v) {
       // JSCAD Z-up → Three.js Y-up: [x, y, z] → [x, z, -y]
       allVerts.push(pt[0], pt[2], -pt[1])
-      // same remap for normals
       allNormals.push(n[0], n[2], -n[1])
     }
     allIndices.push(offset, offset + 1, offset + 2)

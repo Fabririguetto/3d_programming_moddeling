@@ -1,18 +1,20 @@
 import { createContext, useContext, useEffect, useRef, ReactNode, useCallback } from 'react'
 import { useStore } from '../store/useStore'
+import { exportPDF } from './pdfExport'
 import type { WorkerResponse } from '../workers/jscad.worker'
 
 interface WorkerContextValue {
   compile: (code: string) => void
   exportSTL: () => Promise<ArrayBuffer>
   exportOBJ: () => Promise<string>
+  triggerPDF: () => void
 }
 
 const WorkerContext = createContext<WorkerContextValue | null>(null)
 
 export function WorkerProvider({ children }: { children: ReactNode }) {
   const workerRef = useRef<Worker | null>(null)
-  const { setGeometry, setRenderError, setIsCompiling } = useStore()
+  const { setGeometry, setRenderError, setIsCompiling, setPieces } = useStore()
 
   useEffect(() => {
     const worker = new Worker(
@@ -28,6 +30,7 @@ export function WorkerProvider({ children }: { children: ReactNode }) {
           indices: new Uint32Array(res.indices),
           normals: new Float32Array(res.normals),
         })
+        setPieces(res.pieces)
         setIsCompiling(false)
       } else if (res.type === 'error') {
         setRenderError(res.message)
@@ -42,7 +45,7 @@ export function WorkerProvider({ children }: { children: ReactNode }) {
 
     workerRef.current = worker
     return () => worker.terminate()
-  }, [setGeometry, setRenderError, setIsCompiling])
+  }, [setGeometry, setRenderError, setIsCompiling, setPieces])
 
   const compile = useCallback((code: string) => {
     setIsCompiling(true)
@@ -83,8 +86,13 @@ export function WorkerProvider({ children }: { children: ReactNode }) {
     })
   }, [])
 
+  const triggerPDF = useCallback(() => {
+    const { project, pieces } = useStore.getState()
+    exportPDF(project.name, pieces)
+  }, [])
+
   return (
-    <WorkerContext.Provider value={{ compile, exportSTL, exportOBJ }}>
+    <WorkerContext.Provider value={{ compile, exportSTL, exportOBJ, triggerPDF }}>
       {children}
     </WorkerContext.Provider>
   )

@@ -8,7 +8,7 @@ function mm(v: number) {
 }
 
 export function DimensionBox({ bbox }: { bbox: BoundingBox }) {
-  const { w, h, d, cx, cy, cz, minX, maxX, minY, maxY, minZ, maxZ } = bbox
+  const { w, h, d, cx, cy, cz, maxX, minY, maxZ } = bbox
 
   const edges = useMemo(() => {
     const geo = new THREE.BoxGeometry(w, h, d)

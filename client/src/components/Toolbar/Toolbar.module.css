@@ -126,3 +126,17 @@
   gap: 4px;
   margin-left: 8px;
 }
+
+.btnPDF {
+  background: rgba(243, 139, 168, 0.12);
+  border: 1px solid rgba(243, 139, 168, 0.35);
+  border-radius: 6px;
+  color: #f38ba8;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 5px 12px;
+  transition: background 0.15s;
+}
+
+.btnPDF:hover { background: rgba(243, 139, 168, 0.22); }
