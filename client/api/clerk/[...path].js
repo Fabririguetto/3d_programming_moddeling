@@ -1,8 +1,8 @@
 export const config = { runtime: 'edge' }
 
 const CLERK_API = 'https://api.clerk.com'
-// The JS bundle is version-specific, not instance-specific — dev FAPI serves it fine
-const CLERK_JS_CDN = 'https://allowing-opossum-330.clerk.accounts.dev'
+// jsDelivr mirrors npm exactly: /npm/@clerk/clerk-js@6/dist/clerk.browser.js works as-is
+const CLERK_JS_CDN = 'https://cdn.jsdelivr.net'
 
 export default async function handler(req) {
   const url = new URL(req.url)
@@ -15,6 +15,7 @@ export default async function handler(req) {
     method: req.method,
     headers: req.headers,
     body: req.method !== 'GET' && req.method !== 'HEAD' ? req.body : undefined,
+    redirect: 'follow',
   })
 
   return new Response(response.body, { status: response.status, headers: response.headers })
