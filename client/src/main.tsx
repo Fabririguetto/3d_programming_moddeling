@@ -7,7 +7,7 @@ import { WorkerProvider } from './lib/WorkerContext.tsx'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <ClerkProvider proxyUrl={`${window.location.origin}/__clerk`} afterSignOutUrl="/">
+    <ClerkProvider afterSignOutUrl="/">
       <WorkerProvider>
         <App />
       </WorkerProvider>

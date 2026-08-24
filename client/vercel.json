@@ -1,12 +1,8 @@
 {
   "rewrites": [
     {
-      "source": "/__clerk/npm/:path*",
-      "destination": "https://cdn.jsdelivr.net/npm/:path*"
-    },
-    {
-      "source": "/__clerk/:path*",
-      "destination": "https://clerk.3d-programming-moddeling.vercel.app/:path*"
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ]
 }
