@@ -6,7 +6,7 @@
     },
     {
       "source": "/__clerk/:path*",
-      "destination": "https://api.clerk.com/:path*"
+      "destination": "https://clerk.3d-programming-moddeling.vercel.app/:path*"
     }
   ]
 }
