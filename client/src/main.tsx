@@ -7,7 +7,7 @@ import { WorkerProvider } from './lib/WorkerContext.tsx'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <ClerkProvider afterSignOutUrl="/">
+    <ClerkProvider proxyUrl="https://3d-programming-moddeling.vercel.app/__clerk" afterSignOutUrl="/">
       <WorkerProvider>
         <App />
       </WorkerProvider>
