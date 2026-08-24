@@ -4,8 +4,10 @@
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  max-height: 220px;
+  max-height: 240px;
 }
+
+/* ── Status bar ── */
 
 .statusBar {
   display: flex;
@@ -25,6 +27,7 @@
 }
 
 .label { color: #6c7086; }
+
 .value {
   color: #a6adc8;
   font-variant-numeric: tabular-nums;
@@ -78,21 +81,54 @@
   white-space: nowrap;
 }
 
-.cutTable td {
-  padding: 4px 10px;
+/* ── Group row ── */
+
+.groupRow {
+  cursor: pointer;
   border-bottom: 1px solid #1e1e2e;
-  color: #a6adc8;
+}
+
+.groupRow:hover td { background: rgba(137, 180, 250, 0.05); }
+
+.chevron {
+  padding: 5px 6px 5px 10px;
+  color: #45475a;
+  font-size: 9px;
+  user-select: none;
+}
+
+.dimsCell {
+  padding: 5px 8px;
+  font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 
-.cutTable tr:last-child td { border-bottom: none; }
+.dimW    { color: #f38ba8; font-weight: 600; }
+.dimH    { color: #a6e3a1; font-weight: 600; }
+.dimD    { color: #89b4fa; font-weight: 600; }
+.dimSep  { color: #45475a; }
+.dimUnit { color: #6c7086; font-size: 10px; }
 
-.cutTable tr:hover td { background: rgba(255,255,255,0.03); }
+.qtyCell {
+  padding: 5px 8px;
+  color: #a6adc8;
+  text-align: center;
+  white-space: nowrap;
+}
 
-.nameCell { color: #cdd6f4; max-width: 140px; overflow: hidden; text-overflow: ellipsis; }
-.dimW     { color: #f38ba8; font-variant-numeric: tabular-nums; }
-.dimH     { color: #a6e3a1; font-variant-numeric: tabular-nums; }
-.dimD     { color: #89b4fa; font-variant-numeric: tabular-nums; }
+/* ── Expanded piece row ── */
+
+.pieceRow td { background: rgba(255,255,255,0.015); }
+.pieceRow:last-child td { border-bottom: 1px solid #2a2a3e; }
+
+.pieceName {
+  padding: 3px 10px 3px 28px;
+  color: #6c7086;
+  font-size: 11px;
+  border-bottom: 1px solid #1a1a2e;
+}
+
+/* ── Material input ── */
 
 .matInput {
   background: transparent;
@@ -100,9 +136,10 @@
   border-bottom: 1px dashed #313244;
   color: #cba6f7;
   font-size: 11px;
-  width: 110px;
+  width: 120px;
   outline: none;
-  padding: 1px 2px;
+  padding: 2px 3px;
+  margin: 2px 0;
 }
 
 .matInput::placeholder { color: #45475a; }

@@ -33,6 +33,7 @@ export function Viewport3D() {
           enableRotate
           zoomSpeed={1.2}
           panSpeed={0.8}
+          minDistance={10}
           maxDistance={200000}
         />
         <Scene showDims={showDims} hoveredIndex={hoveredIndex} onHoverPiece={handleHoverPiece} />
