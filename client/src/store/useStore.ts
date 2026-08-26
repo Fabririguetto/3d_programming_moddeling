@@ -121,7 +121,7 @@ interface Store {
   newProject: () => void
 }
 
-const DEFAULT_CODE = `// Forma3D — Editor paramétrico
+const DEFAULT_CODE = `// GeoStudio3D — Editor paramétrico
 // Retorná un array de { name, geo } para el plano PDF con medidas por pieza
 
 const { cuboid } = jscad.primitives

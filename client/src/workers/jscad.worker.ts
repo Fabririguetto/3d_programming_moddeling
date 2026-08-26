@@ -181,7 +181,7 @@ function buildSTL(geoms: Geom3[]): ArrayBuffer {
 
 function buildOBJ(geoms: Geom3[]): string {
   const tris = getTriangles(geoms)
-  const lines: string[] = ['# Forma3D export', '']
+  const lines: string[] = ['# GeoStudio3D export', '']
   let vi = 1
   for (const { n, v } of tris) {
     for (const pt of v) lines.push(`v ${pt[0].toFixed(4)} ${pt[1].toFixed(4)} ${pt[2].toFixed(4)}`)

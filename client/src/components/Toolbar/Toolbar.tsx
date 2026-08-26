@@ -73,7 +73,8 @@ export function Toolbar() {
   return (
     <header className={styles.toolbar}>
       <div className={styles.left}>
-        <span className={styles.logo}>Forma3D</span>
+        <img src="/favicon.svg" alt="" className={styles.logoImg} />
+        <span className={styles.logo}>GeoStudio3D</span>
 
         {editingName ? (
           <input
